@@ -40,6 +40,12 @@ public class Buscador {
     static final String USER = "root"; /*Usuario que se conectará a la base de datos*/
     static final String PASS = "145xswZO"; /*Password del usuario que se conectará*/
     
+    public static String crearConsulta(String campo1, String campo2, String tabla){
+        String consulta;
+        consulta = "SELECT " + campo1 + ", " + campo2 + " FROM " + tabla;
+        return consulta;
+    }
+    
     public static void main(String[] args) throws IOException, ParseException {
         Connection conn = null; /*Iniciamos la conexion en null, para manejar las excepciones correspondientes*/
         Statement stmt = null; /*Iniciamos el statement en null, para lo mismo*/
@@ -51,6 +57,7 @@ public class Buscador {
             conn = DriverManager.getConnection(DB_URL,USER,PASS); /*Obtenemos la conexion con la url de la DB, y las credenciales necesarias*/
             stmt = conn.createStatement(); /*Obtenemos la declaración*/
             String sql; /*Creamos el string para la consulta a ejecutar en la DB*/
+            System.out.println("La consulta es: " + crearConsulta("id_comentario","texto_comentario","comentario"));
             sql = "SELECT id_comentario, texto_comentario FROM comentario"; /*Realizamos la consulta pertinente*/
             ResultSet rs = stmt.executeQuery(sql); /*Ejecutamos la consulta*/
             /****** DECLARACIONES DE LUCENE ******/
