@@ -19,7 +19,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 /*Importamos las librerias necesarias para las excepciones de I/O*/
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -36,10 +35,10 @@ import org.apache.lucene.store.FSDirectory;
 public class Buscador {
     /*Declaración de los string necesarios para las rutas de conexion de mysql*/
     static final String JDBC_DRIVER = "com.mysql.jdbc.Driver"; /*Acá le indicamos con que driver se debe conectar*/
-    static final String DB_URL = "jdbc:mysql://localhost:3306/prueba"; /*Acá le damos la ruta de la base de datos*/
+    static final String DB_URL = "jdbc:mysql://localhost:3306/memento"; /*Acá le damos la ruta de la base de datos*/
     /*Declaracion de las credenciales necesarias*/
     static final String USER = "root"; /*Usuario que se conectará a la base de datos*/
-    static final String PASS = "admin"; /*Password del usuario que se conectará*/
+    static final String PASS = "145xswZO"; /*Password del usuario que se conectará*/
     
     public static void main(String[] args) throws IOException, ParseException {
         Connection conn = null; /*Iniciamos la conexion en null, para manejar las excepciones correspondientes*/
@@ -52,18 +51,19 @@ public class Buscador {
             conn = DriverManager.getConnection(DB_URL,USER,PASS); /*Obtenemos la conexion con la url de la DB, y las credenciales necesarias*/
             stmt = conn.createStatement(); /*Obtenemos la declaración*/
             String sql; /*Creamos el string para la consulta a ejecutar en la DB*/
-            sql = "SELECT ISBN, nombre_libro FROM libro"; /*Realizamos la consulta pertinente*/
+            sql = "SELECT id_comentario, texto_comentario FROM comentario"; /*Realizamos la consulta pertinente*/
             ResultSet rs = stmt.executeQuery(sql); /*Ejecutamos la consulta*/
             /****** DECLARACIONES DE LUCENE ******/
             StandardAnalyzer analyzer = new StandardAnalyzer(); /*Creamos un nuevo analyzer*/
             //Directory index = new RAMDirectory(); /*SE CREA EL INDEX EN LA RAM LA SIGUIENTE LINEA ES PARA CREAR EN HDD*/
-            Directory index = FSDirectory.open(Paths.get("Indice")); /*Creamos un nuevo index en la capeta Indice, que se crea por defecto en la carpeta del proyecto.*/
+            Directory index = FSDirectory.open(Paths.get("INDICE")); /*Creamos un nuevo index en la capeta Indice, que se crea por defecto en la carpeta del proyecto.*/
             IndexWriterConfig config = new IndexWriterConfig(analyzer); /*Creamos una nueva config*/
             IndexWriter w = new IndexWriter(index, config); /*Creamos un escritor de indices, con el index creado y la config*/
             while(rs.next()){ /*Leemos todas las columnas de la tabla*/
-                String isbn = rs.getString("ISBN"); /*Creamos el string isbn donde se guardara el dato obtenido desde la DB*/
-                String nombre = rs.getString("nombre_libro"); /*Creamos el string nombre donde se guardara el dato obtenidos desde la DB*/
-                addDoc(w, nombre, isbn); /*Añadimos el documento, con el escritor*/
+                String comentario = rs.getString("texto_comentario");
+                String identificador = rs.getString("id_comentario");
+                System.out.println("Tenemos: " + comentario + " y " + identificador);
+                addDoc(w, comentario, identificador); /*Añadimos el documento, con el escritor*/
             }
             w.close(); /*Cerramos el escritor*/
             rs.close(); /*Cerramos el ejecutor de las consultas*/
@@ -73,7 +73,7 @@ public class Buscador {
             System.out.print("Ingrese un término para la búsqueda: ");
             String busqueda = br.readLine(); /*Obtenemos el string que el usuario quiere buscar*/
             //String querystr = args.length > 0 ? args[0] : busqueda;
-            Query q = new QueryParser("nombre", analyzer).parse(busqueda); /*Creamos la nueva query para el buscador, le pasa el string que ingreso el usuario*/
+            Query q = new QueryParser("texto_comentario", analyzer).parse(busqueda); /*Creamos la nueva query para el buscador, le pasa el string que ingreso el usuario*/
             int hitsPerPage = 20; /*Declaramos cuantas coincidencias mostraremos por página*/
             IndexReader reader = DirectoryReader.open(index); /*Inicializamos el lector, desde el directorio para leer*/
             IndexSearcher searcher = new IndexSearcher(reader); /*Inicializamos el buscador, pasandole como parámetro el lector*/
@@ -84,7 +84,7 @@ public class Buscador {
             for(int i=0; i < hits.length; i++) { /*Recorremos cada uno de los documentos*/
                 int docId = hits[i].doc;
                 Document d = searcher.doc(docId); /*Buscamos el documento*/
-                System.out.println((i + 1) + ". " + d.get("isbn") + "\t" + d.get("nombre")); /*Se muestra por pantalla el resultado encontrado*/
+                System.out.println((i + 1) + ". " + d.get("id_comentario") + "\t" + d.get("texto_comentario")); /*Se muestra por pantalla el resultado encontrado*/
             }   
 
             reader.close(); /*Cerramos el lector*/
@@ -108,10 +108,10 @@ public class Buscador {
         }
     }
 
-  private static void addDoc(IndexWriter w, String title, String isbn) throws IOException { /*Declaración de la función para añadir documentos*/
+  private static void addDoc(IndexWriter w, String camp1, String camp2) throws IOException { /*Declaración de la función para añadir documentos*/
     Document doc = new Document(); /*Inicializamos un nuevo documento*/
-    doc.add(new TextField("nombre", title, Field.Store.YES)); /*Agregamos el campo nombre al documento*/
-    doc.add(new StringField("isbn", isbn, Field.Store.YES)); /*Agregamos el campo isbn al documento*/
+    doc.add(new TextField("texto_comentario", camp1, Field.Store.YES)); /*Agregamos el campo nombre al documento*/
+    doc.add(new StringField("id_comentario", camp2, Field.Store.YES)); /*Agregamos el campo isbn al documento*/
     w.addDocument(doc); /*Añadimos el nuevo documento*/
   }
 }
