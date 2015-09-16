@@ -123,14 +123,13 @@ public class Lucene {
                 matriz[i][0] = d.get(campo1);
                 matriz[i][1] = d.get(campo2);
             }/*Cierre del for*/
-            System.out.println("Hola estoy acá");
             return matriz;
         }/*Cierre del try*/
     } /*Cierre de la funcion buscar*/
     
     public static void mostrar(String[][] matriz){
         if (matriz == null){
-            System.out.println("Hola matriz es null");
+            System.out.println("La matriz es nula");
         }/*Cierre if*/
         else{
             for (int i = 0; i < matriz.length; i++){
