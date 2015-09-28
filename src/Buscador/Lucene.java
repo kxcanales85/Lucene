@@ -39,11 +39,163 @@ public class Lucene {
     static final String USER = "root";
     static final String PASS = "145xswZO";
     
+    
     private static String crearConsulta(String campo1, String campo2, String tabla){
         String consulta;
         consulta = "SELECT " + campo1 + ", " + campo2 + " FROM " + tabla;
         System.out.println(consulta);
         return consulta;
+    }
+    
+    private static String obtenerID(String id, int ioc){ /*ioc = imagen o comentario, 0 para imagen y 1 para comentario*/
+        String id_usuario = "";
+        if (ioc == 0){ /*El id proviene de una imagen*/
+            /*consulta pa obtener el id*/
+        }
+        else { /*El id proviene de un comentario*/
+            /*Consulta pa obtener el id*/
+        }
+        return id_usuario;
+    }
+    
+    private static String ejecutarConsulta(Connection conn, Statement stmt, ResultSet rs, String sql, String campo){
+        String resultado = "";
+        try{
+            Class.forName(JDBC_DRIVER);/*Le pasamos el nombre del driver*/
+            System.out.println("Conectando a la base de datos");
+            conn = DriverManager.getConnection(DB_URL,USER,PASS); /*Obtenemos la conexion con la url de la DB, y las credenciales necesarias*/
+            stmt = conn.createStatement(); /*Obtenemos la declaración*/
+            rs = stmt.executeQuery(sql); /*Ejecutamos la consulta*/
+            resultado = rs.getString(campo);
+            System.out.println("Realice la consulta con total normalidad y retornó: "+resultado);
+            
+        }
+        /****** DECLARACIONES DE TODOS LOS CATCH Y FINALLY NECESARIOS ******/ 
+        catch(SQLException | ClassNotFoundException se){
+            System.out.println("ERROR: en la funcion 'conectar'");
+        }
+        return resultado;
+    }
+    
+    private static int calculaPuntaje(String id){
+        int puntaje = 0;
+        String cPermanencia, cAmistoso, cComentador, cImagenes, cImagenesF, cImagenesC;
+        cPermanencia = "";
+        cAmistoso = "";
+        cComentador = "";
+        cImagenes = "";
+        cImagenesF = "";
+        cImagenesC = "";
+        int permanencia, amistoso, comentador, imagenes, imagenesF, imagenesC;
+        permanencia = Integer.parseInt(cPermanencia);
+        amistoso = Integer.parseInt(cAmistoso);
+        comentador = Integer.parseInt(cComentador);
+        imagenes = Integer.parseInt(cImagenes);
+        imagenesF = Integer.parseInt(cImagenesF);
+        imagenesC = Integer.parseInt(cImagenesC);
+        /*Puntajes por permanencia*/
+        if(permanencia < 3){
+            puntaje = puntaje + 1;
+        }
+        else {
+            if(permanencia >= 3 || permanencia < 10){
+                puntaje = puntaje + 2;
+            }
+            else {
+                if(permanencia >= 10 || permanencia < 30){
+                    puntaje = puntaje + 3;
+                }
+                else {
+                    puntaje = puntaje + 4;
+                }
+            }
+        }
+        /*Puntajes por amistad*/
+        if(amistoso < 15){
+            puntaje = puntaje + 1;
+        }
+        else {
+            if(amistoso >= 15 || amistoso < 50){
+                puntaje = puntaje + 2;
+            }
+            else {
+                if(amistoso >= 50 || amistoso < 100){
+                    puntaje = puntaje + 3;
+                }
+                else {
+                    puntaje = puntaje + 4;
+                }
+            }
+        }
+        /*Puntajes por comentar*/
+        if(comentador < 20){
+            puntaje = puntaje + 1;
+        }
+        else {
+            if(comentador >= 20 || comentador < 40){
+                puntaje = puntaje + 2;
+            }
+            else {
+                if(comentador >= 40 || comentador < 60){
+                    puntaje = puntaje + 3;
+                }
+                else {
+                    puntaje = puntaje + 4;
+                }
+            }
+        }
+        /*Puntajes por imagenes subidas*/
+        if(imagenes < 10){
+            puntaje = puntaje + 1;
+        }
+        else {
+            if(imagenes >= 10 || imagenes < 20){
+                puntaje = puntaje + 2;
+            }
+            else {
+                if(imagenes >= 20 || imagenes < 100){
+                    puntaje = puntaje + 3;
+                }
+                else {
+                    puntaje = puntaje + 4;
+                }
+            }
+        }
+        /*Puntajes por imagenes con favoritos*/
+        if(imagenesF == 0){
+            puntaje = puntaje + 1;
+        }
+        else {
+            if(imagenesF == 1){
+                puntaje = puntaje + 2;
+            }
+            else {
+                if(imagenesF > 2 || imagenesF < 10){
+                    puntaje = puntaje + 3;
+                }
+                else {
+                    puntaje = puntaje + 4;
+                }
+            }
+        }
+        /*Puntajes por imagenes comentadas*/
+        if(imagenesC == 0){
+            puntaje = puntaje + 1;
+        }
+        else {
+            if(imagenesC == 1){
+                puntaje = puntaje + 2;
+            }
+            else {
+                if(imagenesC > 2 || imagenesC < 10){
+                    puntaje = puntaje + 3;
+                }
+                else {
+                    puntaje = puntaje + 4;
+                }
+            }
+        }
+        return puntaje;
     }
     
     private static ResultSet conectar(Connection conn, Statement stmt, ResultSet rs, String campo1, String campo2, String tabla){
@@ -122,6 +274,16 @@ public class Lucene {
                 Document d = searcher.doc(docId); /*Buscamos el documento*/
                 matriz[i][0] = d.get(campo1);
                 matriz[i][1] = d.get(campo2);
+                String identificador = (d.get(campo1));
+                if(tabla.equals("Fotografia")){
+                    /*obtener id desde la tabla fotografia*/
+                }
+                else{
+                    if(tabla.equals("Comentario")){
+                        /*Obtener id desde la tabla comentario*/
+                    }                        
+                }
+                /*matriz[i][2] = calculaPuntaje(identificador, ); HAY QUE CALCULAR EL ID DEL USUARIO Y LLAMAR A LA FUNCION*/ 
             }/*Cierre del for*/
             return matriz;
         }/*Cierre del try*/
