@@ -47,69 +47,78 @@ public class Lucene {
         return consulta;
     }
     
-    private static String obtenerID(String id, int ioc){ /*ioc = imagen o comentario, 0 para imagen y 1 para comentario*/
-        String id_usuario = "";
-        if (ioc == 0){ /*El id proviene de una imagen*/
-            /*consulta pa obtener el id*/
-        }
-        else { /*El id proviene de un comentario*/
-            /*Consulta pa obtener el id*/
-        }
-        return id_usuario;
-    }
-    
     private static String ejecutarConsulta(Connection conn, Statement stmt, ResultSet rs, String sql, String campo){
         String resultado = "";
         try{
             Class.forName(JDBC_DRIVER);/*Le pasamos el nombre del driver*/
-            System.out.println("Conectando a la base de datos");
+            //System.out.println("Conectando a la base de datos");
             conn = DriverManager.getConnection(DB_URL,USER,PASS); /*Obtenemos la conexion con la url de la DB, y las credenciales necesarias*/
             stmt = conn.createStatement(); /*Obtenemos la declaración*/
+            //System.out.println("La consulta es: " + sql+ " y el campo es: "+campo);
             rs = stmt.executeQuery(sql); /*Ejecutamos la consulta*/
-            resultado = rs.getString(campo);
+            //System.out.println("ejecute la consulta");
+            while(rs.next()){
+                resultado = rs.getString(campo);
+            }
+            //resultado = rs.getString("id_usuario");
             System.out.println("Realice la consulta con total normalidad y retornó: "+resultado);
             
         }
         /****** DECLARACIONES DE TODOS LOS CATCH Y FINALLY NECESARIOS ******/ 
         catch(SQLException | ClassNotFoundException se){
-            System.out.println("ERROR: en la funcion 'conectar'");
+            System.out.println("ERROR: en la funcion 'ejecutarConsulta'");
         }
         return resultado;
     }
     
-    private static int calculaPuntaje(String id){
+    public static void ordenar(String matriz[][], int izq, int der) {
+        int pivote = Integer.parseInt(matriz[izq][2]);
+        int i = izq; 
+        int j = der;
+        String aux;
+ 
+        while(i<j){            // mientras no se crucen las búsquedas
+            while(Integer.parseInt(matriz[i][2])<=pivote && i<j){
+                i++;
+                int auxiliar = Integer.parseInt(matriz[j][2]);
+                while(auxiliar > pivote){
+                    j--;
+                    if (i<j) {
+                        aux = matriz[i][2];
+                        matriz[i][2] = matriz[j][2];
+                        matriz[j][2] = aux;
+                    }
+                }
+            }
+        }
+        matriz[izq][2] = matriz[j][2];
+        matriz[j][2]=Integer.toString(pivote);
+        if(izq < j-1){
+            ordenar(matriz,izq,j-1);
+        }
+        if(j+1 <der){
+            ordenar(matriz,j+1,der);
+        }
+    }
+    
+    private static int calculaPuntaje(String id, Connection conn, Statement stmt, ResultSet rs){
         int puntaje = 0;
-        String cPermanencia, cAmistoso, cComentador, cImagenes, cImagenesF, cImagenesC;
-        cPermanencia = "";
-        cAmistoso = "";
-        cComentador = "";
-        cImagenes = "";
-        cImagenesF = "";
-        cImagenesC = "";
-        int permanencia, amistoso, comentador, imagenes, imagenesF, imagenesC;
-        permanencia = Integer.parseInt(cPermanencia);
+        String cAmistoso, cComentador, cImagenes, cImagenesF, cImagenesC;
+        cAmistoso = "Select seguidores from usuario where id_usuario = "+id+";";
+        cAmistoso = ejecutarConsulta(conn, stmt, rs, cAmistoso, "seguidores");
+        cComentador = "Select comentarios_positivos from usuario where id_usuario = "+id+";";
+        cComentador = ejecutarConsulta(conn, stmt, rs, cComentador, "comentarios_positivos");
+        cImagenes = "Select count(*) from imagen where id_usuario = "+id+";";
+        cImagenes = ejecutarConsulta(conn, stmt, rs, cImagenes, "count(*)");
+        cImagenesF = "call PuntajeParaFavoritos("+id+");";
+        cImagenesF = ejecutarConsulta(conn, stmt, rs, cImagenesF, "count(*)");
+        cImagenesC = ""; /*Aun no existe*/
+        int amistoso = 0, comentador = 0, imagenes = 0, imagenesF = 0, imagenesC = 0;
         amistoso = Integer.parseInt(cAmistoso);
         comentador = Integer.parseInt(cComentador);
         imagenes = Integer.parseInt(cImagenes);
         imagenesF = Integer.parseInt(cImagenesF);
-        imagenesC = Integer.parseInt(cImagenesC);
-        /*Puntajes por permanencia*/
-        if(permanencia < 3){
-            puntaje = puntaje + 1;
-        }
-        else {
-            if(permanencia >= 3 || permanencia < 10){
-                puntaje = puntaje + 2;
-            }
-            else {
-                if(permanencia >= 10 || permanencia < 30){
-                    puntaje = puntaje + 3;
-                }
-                else {
-                    puntaje = puntaje + 4;
-                }
-            }
-        }
+        //imagenesC = Integer.parseInt(cImagenesC);
         /*Puntajes por amistad*/
         if(amistoso < 15){
             puntaje = puntaje + 1;
@@ -243,11 +252,16 @@ public class Lucene {
     public static String[][] buscar(String termino, String campo1, String campo2, String tabla, int hitsPerPage, int crear) throws IOException, SQLException, ParseException{
         StandardAnalyzer analyzer = new StandardAnalyzer();
         Directory index = FSDirectory.open(Paths.get("INDICE"));
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+        rs = conectar(conn, stmt, rs, campo1, campo2, tabla);
+        
         if(crear == 1){
-            Connection conn = null;
+            /*Connection conn = null;
             Statement stmt = null;
             ResultSet rs = null;
-            rs = conectar(conn, stmt, rs, campo1, campo2, tabla);
+            rs = conectar(conn, stmt, rs, campo1, campo2, tabla);*/
             
             IndexWriterConfig config = new IndexWriterConfig(analyzer);
             try (IndexWriter w = new IndexWriter(index, config)) {
@@ -258,33 +272,41 @@ public class Lucene {
                 } /*Cierre del while*/
                 w.close();
             } /*Cierre del try*/
-            desconectar(rs, stmt, conn);
+            
         }
         Query q = new QueryParser(campo2, analyzer).parse(termino);
         ScoreDoc[] hits;
-        String[][] matriz = null;
+        String[][] matriz;
         try (IndexReader reader = DirectoryReader.open(index)) {            
             IndexSearcher searcher = new IndexSearcher(reader);
             TopScoreDocCollector collector = TopScoreDocCollector.create(hitsPerPage);
             searcher.search(q, collector);
             hits = collector.topDocs().scoreDocs;
-            matriz = new String[hits.length][2];
+            matriz = new String[hits.length][3];
             for(int i=0; i < hits.length; i++) { /*Recorremos cada uno de los documentos*/
                 int docId = hits[i].doc;
                 Document d = searcher.doc(docId); /*Buscamos el documento*/
                 matriz[i][0] = d.get(campo1);
                 matriz[i][1] = d.get(campo2);
-                String identificador = (d.get(campo1));
-                if(tabla.equals("Fotografia")){
-                    /*obtener id desde la tabla fotografia*/
+                String resultado = "";
+                if(tabla.equals("imagen")){
+                    /*obtener id desde la tabla imagen*/
+                    String consulta = "Select id_usuario from imagen where id_imagen = "+d.get(campo1)+";";
+                    resultado = ejecutarConsulta(conn, stmt, rs, consulta,"id_usuario");
                 }
                 else{
-                    if(tabla.equals("Comentario")){
+                    if(tabla.equals("comentario")){
                         /*Obtener id desde la tabla comentario*/
+                        String consulta = "Select id_usuario from comentario where id_comentario = "+d.get(campo1)+";";
+                        resultado = ejecutarConsulta(conn, stmt, rs, consulta,"id_usuario");
                     }                        
                 }
-                /*matriz[i][2] = calculaPuntaje(identificador, ); HAY QUE CALCULAR EL ID DEL USUARIO Y LLAMAR A LA FUNCION*/ 
+                String puntajeFinal = Integer.toString(calculaPuntaje(resultado, conn, stmt, rs));
+                matriz[i][2] = puntajeFinal;
             }/*Cierre del for*/
+            desconectar(rs, stmt, conn);
+            int axl = matriz.length - 1;
+            ordenar(matriz, 0, axl);
             return matriz;
         }/*Cierre del try*/
     } /*Cierre de la funcion buscar*/
@@ -295,7 +317,7 @@ public class Lucene {
         }/*Cierre if*/
         else{
             for (int i = 0; i < matriz.length; i++){
-                System.out.println((i + 1) + ". " + matriz[i][0] + "\t" + matriz[i][1]);
+                System.out.println((i + 1) + ". " + matriz[i][0] + "\t" + matriz[i][1] + "\t" + matriz[i][2]);
             }
         }/*Cierre else*/
     }/*Cierre funcion mostrar*/
