@@ -38,7 +38,7 @@ public class Lucene {
     
     /*Declaracion de las credenciales necesarias*/
     static final String USER = "root";
-    static final String PASS = "145xswZO";
+    static final String PASS = "123miel";
     
     
     private static String crearConsulta(String campo1, String campo2, String tabla){
