@@ -14,7 +14,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 public class Buscador {
     public static void main(String[] args) throws IOException, SQLException, ParseException{
         String termino = "Comentario0", campo1 = "id_comentario", campo2 = "texto_comentario", tabla = "comentario";
-        int hits = 20, crear = 0;
+        int hits = 20, crear = 1;
         /*La variable crear es una variable de condicion, que basicamente decide si 
         se crea nuevamente el indice, o no es necesario.
         1: para que se cree nuevamente
