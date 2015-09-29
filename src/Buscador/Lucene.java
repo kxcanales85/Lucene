@@ -24,6 +24,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 
 /**
  *
@@ -251,7 +252,8 @@ public class Lucene {
     
     public static String[][] buscar(String termino, String campo1, String campo2, String tabla, int hitsPerPage, int crear) throws IOException, SQLException, ParseException{
         StandardAnalyzer analyzer = new StandardAnalyzer();
-        Directory index = FSDirectory.open(Paths.get("INDICE"));
+        //Directory index = FSDirectory.open(Paths.get("INDICE"));
+        Directory index = new RAMDirectory();
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
@@ -306,17 +308,21 @@ public class Lucene {
             }/*Cierre del for*/
             desconectar(rs, stmt, conn);
             int axl = matriz.length - 1;
-            ordenar(matriz, 0, axl);
+            if (matriz.length != 0){
+                ordenar(matriz, 0, axl);
+            }/*Cierre if*/
+            
             return matriz;
         }/*Cierre del try*/
     } /*Cierre de la funcion buscar*/
     
     public static void mostrar(String[][] matriz){
-        if (matriz == null){
+        if (matriz.length == 0){
             System.out.println("La matriz es nula");
         }/*Cierre if*/
         else{
             for (int i = 0; i < matriz.length; i++){
+                System.out.println("hola");
                 System.out.println((i + 1) + ". " + matriz[i][0] + "\t" + matriz[i][1] + "\t" + matriz[i][2]);
             }
         }/*Cierre else*/
